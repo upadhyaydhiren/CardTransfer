@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CardTransfer</string>
+    <string name="avatar">Photo</string>
+    <string name="name">NAME</string>
+    <string name="email">EMAIL ID</string>
+    <string name="phone">CONTACT NUMBER</string>
+    <string name="avatar_edit">Change avatar</string>
+</resources>

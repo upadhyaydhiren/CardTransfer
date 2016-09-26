@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#E43F3F</color>
+    <color name="primary_dark">#E12929</color>
+    <color name="primary_darker">#CC1D1D</color>
+    <color name="accent">#FFFFFF</color>
+    <color name="colorPrimary">#888888</color>
+    <color name="colorPrimaryDark">#888888</color>
+    <color name="textColorPrimary">#FFFFFF</color>
+    <color name="windowBackground">#FFFFFF</color>
+    <color name="navigationBarColor">#000000</color>
+    <color name="colorAccent">#c8e8ff</color>
+    <color name="black">#000000</color>
+    <color name="jet">#777777</color>
+    <color name="oil">#333333</color>
+    <color name="monsoon">#777777</color>
+    <color name="jumbo">#888888</color>
+    <color name="aluminum">#999999</color>
+    <color name="base">#AAAAAA</color>
+    <color name="iron">#CCCCCC</color>
+    <color name="white">#FFFFFF</color>
+    <color name="green">#00FF00</color>
+    <color name="lighhtYellow">#FCFFAA</color>
+    <color name="avatar_placeholder">#D8D8D8</color>
+    <color name="text_light">#999999</color>
+    <color name="background_card">#FAFAFA</color>
+    <color name="orange_button">#DF670E</color>
+    <color name="blue">#0000FF</color>
+</resources>

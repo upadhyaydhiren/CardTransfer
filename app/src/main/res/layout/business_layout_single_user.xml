@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="5dp"
+    android:background="@drawable/list_selector">
+
+
+
+    <LinearLayout android:id="@+id/thumbnail_image_chat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="3dip"
+        android:layout_alignParentLeft="true"
+        android:layout_marginRight="5dip">
+
+        <ImageView
+            android:id="@+id/list_image_business"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            android:src="@drawable/ic_avatar"
+            android:background="@drawable/avatar_placeholder"
+            />
+
+
+    <TextView
+        android:gravity="left"
+        android:layout_toRightOf="@id/thumbnail_image_chat"
+        android:id="@+id/business_user_name"
+        android:textColor="#040404"
+        android:layout_marginLeft="15dp"
+        android:textSize="22dip"
+        android:text="Hello World"
+        android:layout_marginTop="27dp"
+        android:layout_marginStart="50dp"
+        android:typeface="sans"
+        android:maxLength="20"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</android.support.v7.widget.CardView>
