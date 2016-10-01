@@ -24,12 +24,12 @@ import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore.Images;
 import android.util.Log;
 
+import com.teqnihome.imagecrop.BitmapManager;
+import com.teqnihome.imagecrop.Util;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.teqnihome.imagecrop.BitmapManager;
-import com.teqnihome.imagecrop.Util;
 
 /**
  * Represents a particular image and provides access to the underlying bitmap

@@ -18,13 +18,13 @@ package com.teqnihome.imagecrop.gallery;
 
 import android.net.Uri;
 
+import com.teqnihome.imagecrop.ImageManager;
+import com.teqnihome.imagecrop.Util;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
-
-import com.teqnihome.imagecrop.ImageManager;
-import com.teqnihome.imagecrop.Util;
 
 /**
  * A union of different <code>IImageList</code>. This class can merge several

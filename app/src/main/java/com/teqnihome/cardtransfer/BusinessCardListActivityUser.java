@@ -57,8 +57,8 @@ public class BusinessCardListActivityUser extends AppCompatActivity implements S
 
     static DeviceAdapter deviceAdapter;
     static RecyclerView deviceLayout;
-    private ArrayList<BluetoothDevice> bluetoothDevices = new ArrayList<>();
-    private ArrayList<BluetoothDevice> tempbluetoothDevices = new ArrayList<>();
+    private ArrayList<BluetoothDevice> wifiDevices = new ArrayList<>();
+    private ArrayList<BluetoothDevice> tempWifiDevices = new ArrayList<>();
     static Context mContext;
     static BluetoothDevice device;
     private SearchView searchView;
@@ -154,7 +154,7 @@ public class BusinessCardListActivityUser extends AppCompatActivity implements S
 
     void bluetoothEnabled() {
         deviceLayout = (RecyclerView) findViewById(R.id.list_business);
-        deviceAdapter = new DeviceAdapter(this, bluetoothDevices);
+        deviceAdapter = new DeviceAdapter(this, wifiDevices);
         setDeviceLayout(deviceLayout);
         alreadyBondedDevice();
 
@@ -341,8 +341,8 @@ public class BusinessCardListActivityUser extends AppCompatActivity implements S
                 final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
 
-                if (!tempbluetoothDevices.contains(device)) {
-                    tempbluetoothDevices.add(device);
+                if (!tempWifiDevices.contains(device)) {
+                    tempWifiDevices.add(device);
                     deviceAdapter.add(device.getName(), "Not Connected", device);
                     Log.d(TAG, "onReceive: " + device.getAddress() + "  " + device.getName() + "    ");
                 }
@@ -363,8 +363,8 @@ public class BusinessCardListActivityUser extends AppCompatActivity implements S
 
         for (final BluetoothDevice deviceSet : listdevice) {
 
-            if (!tempbluetoothDevices.contains(deviceSet)) {
-                            tempbluetoothDevices.add(deviceSet);
+            if (!tempWifiDevices.contains(deviceSet)) {
+                            tempWifiDevices.add(deviceSet);
                             deviceAdapter.add(deviceSet.getName(), "Paired", deviceSet);
                         }
 

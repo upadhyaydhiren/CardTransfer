@@ -31,11 +31,11 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 
+import com.teqnihome.imagecrop.gallery.IImage;
+
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
-
-import com.teqnihome.imagecrop.gallery.IImage;
 
 /**
  * Collection of utility functions used in this package.

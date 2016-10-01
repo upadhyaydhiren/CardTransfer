@@ -24,10 +24,10 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 import android.util.Log;
 
+import com.teqnihome.imagecrop.BitmapManager;
+
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.teqnihome.imagecrop.BitmapManager;
 
 /**
  * Represents a particular video and provides access to the underlying data and

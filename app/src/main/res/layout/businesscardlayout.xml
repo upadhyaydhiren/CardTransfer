@@ -149,17 +149,35 @@
         />
 
 </FrameLayout>
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
         <Button
             android:id="@+id/button_send"
-            android:layout_width="match_parent"
+            android:layout_alignParentRight="true"
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
-            android:text="Send"
+            android:text="Bluetooth"
             android:layout_marginTop="@dimen/margin_default"
             android:textColor="@color/white"
             android:textSize="@dimen/text_small"
             android:background="@color/blue"
-            android:visibility="gone"
+            android:visibility="visible"
             />
+        <Button
+            android:id="@+id/button_send_wifi"
+            android:layout_alignParentLeft="true"
+            android:layout_width="130dp"
+            android:layout_height="wrap_content"
+            android:text="Wifi"
+            android:layout_toRightOf="@id/button_send"
+            android:layout_marginTop="@dimen/margin_default"
+            android:textColor="@color/white"
+            android:textSize="@dimen/text_small"
+            android:background="@color/blue"
+            android:visibility="visible"
+            />
+        </RelativeLayout>
 
     </LinearLayout>
 

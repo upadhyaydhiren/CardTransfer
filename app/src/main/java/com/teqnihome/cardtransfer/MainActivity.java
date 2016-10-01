@@ -1,7 +1,7 @@
 package com.teqnihome.cardtransfer;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
 /**
  * This is main activity that extends {@link AppCompatActivity}

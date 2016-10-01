@@ -23,12 +23,12 @@ import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import com.teqnihome.imagecrop.BitmapManager;
+import com.teqnihome.imagecrop.Util;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-
-import com.teqnihome.imagecrop.BitmapManager;
-import com.teqnihome.imagecrop.Util;
 
 class UriImage implements IImage {
     private static final String TAG = "UriImage";

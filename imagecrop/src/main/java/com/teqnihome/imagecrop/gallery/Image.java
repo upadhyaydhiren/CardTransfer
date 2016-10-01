@@ -27,10 +27,10 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
 
-import java.io.IOException;
-
 import com.teqnihome.imagecrop.BitmapManager;
 import com.teqnihome.imagecrop.Util;
+
+import java.io.IOException;
 
 /**
  * The class for normal images in gallery.

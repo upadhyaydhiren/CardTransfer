@@ -22,11 +22,11 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.teqnihome.imagecrop.ImageManager;
 import com.teqnihome.imagecrop.Util;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A collection of <code>BaseImage</code>s.
