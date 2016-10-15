@@ -13,7 +13,6 @@ import android.graphics.PorterDuff;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -30,20 +29,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.teqnihome.cardtransfer.Database.DataBaseHelper;
 import com.teqnihome.cardtransfer.Thread.AcceptBusinessThread;
-import com.teqnihome.cardtransfer.Utils.UtilsHandler;
 import com.teqnihome.imagecrop.CropImageIntentBuilder;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 /**
  * This is BusinessCardActivity class that extends {@link AppCompatActivity}
@@ -58,6 +47,7 @@ public class BusinessCard extends AppCompatActivity implements View.OnClickListe
     private WifiP2pManager manager;
     private boolean isWifiP2pEnabled = false;
     private boolean retryChannel = false;
+
 
     private final IntentFilter intentFilter = new IntentFilter();
     private WifiP2pManager.Channel channel;
@@ -101,8 +91,6 @@ public class BusinessCard extends AppCompatActivity implements View.OnClickListe
         preferences = getSharedPreferences("businesscard", MODE_PRIVATE);
         editor = preferences.edit();
         ImageCache.setContext(this);
-
-        new FileServerAsyncTask(this).execute();
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!bluetoothAdapter.isEnabled()) {
@@ -387,115 +375,7 @@ public class BusinessCard extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    public static class FileServerAsyncTask extends AsyncTask<Void, Void, String> {
 
-        private final Context context;
-        InputStream in = null;
-        OutputStream out = null;
-        int bufferSize = 1024;
-        byte[] buffer = new byte[8 * bufferSize];
-        File files;
-        DataBaseHelper db;
-
-
-        /**
-         * @param context
-         */
-        public FileServerAsyncTask(Context context) {
-            this.context = context;
-            db = new DataBaseHelper(context);
-
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            try {
-                ServerSocket serverSocket = new ServerSocket(8988);
-                Log.d(TAG, "Server: Socket opened");
-                Socket client = serverSocket.accept();
-
-
-                Log.d(TAG, "Server: connection done");
-                BufferedInputStream bufferedInputStream = new BufferedInputStream(client.getInputStream(), buffer.length);
-                DataInputStream dataInputStream = new DataInputStream(bufferedInputStream);
-                String name = dataInputStream.readUTF();
-                String email = dataInputStream.readUTF();
-                String phone = dataInputStream.readUTF();
-                String filename = dataInputStream.readUTF();
-
-
-                int fileLength = dataInputStream.readInt();
-                int counting = 0;
-                if (!new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth").exists()) {
-                    new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth").mkdir();
-                    new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth/BusinessCard").mkdir();
-
-                }
-
-                files = new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth/BusinessCard", filename);
-                com.teqnihome.cardtransfer.Database.BusinessCard businessCard = new com.teqnihome.cardtransfer.Database.BusinessCard();
-                businessCard.setName(name);
-                businessCard.setPhone(phone);
-                businessCard.setEmail(email);
-                businessCard.setPicture(files.getPath());
-
-                long value = db.insertBusinessCard(businessCard);
-
-                db.closeDB();
-                FileOutputStream fos = new FileOutputStream(files);
-                int len = 0;
-                int newBuffer = 8192;
-                int remaining = fileLength;
-
-                while ((len = dataInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
-                    counting += len;
-                    remaining -= len;
-                    System.out.println("read " + counting + " bytes.");
-                    fos.write(buffer, 0, len);
-                }
-                Log.d(TAG, "run: data inserted id  is  " + value);
-
-
-                fos.close();
-                dataInputStream.close();
-                serverSocket.close();
-                //return f.getAbsolutePath();
-            } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
-                return null;
-            }
-            return "";
-        }
-
-        /*
-         * (non-Javadoc)
-         * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
-         */
-        @Override
-        protected void onPostExecute(String result) {
-            if (result != null) {
-                UtilsHandler.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Intent intent = new Intent(context, BusinessCardReceivedList.class);
-                        context.startActivity(intent);
-
-                    }
-                });
-            }
-
-        }
-
-        /*
-         * (non-Javadoc)
-         * @see android.os.AsyncTask#onPreExecute()
-         */
-        @Override
-        protected void onPreExecute() {
-
-        }
-
-    }
 
 
 

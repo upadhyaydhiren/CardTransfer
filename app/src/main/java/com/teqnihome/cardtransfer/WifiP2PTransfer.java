@@ -7,13 +7,17 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -26,15 +30,30 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.teqnihome.cardtransfer.Database.DataBaseHelper;
 import com.teqnihome.cardtransfer.Thread.SendBusinessCardThread;
+import com.teqnihome.cardtransfer.Utils.UtilsHandler;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +75,9 @@ public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQ
     static Context mContext;
     static WifiP2pDevice device;
     private SearchView searchView;
+    SharedPreferences prefs;
+    static boolean clientCheck = false;
+    static Button button;
 
 
     private WifiP2pManager manager;
@@ -65,17 +87,22 @@ public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQ
     private final IntentFilter intentFilter = new IntentFilter();
     private WifiP2pManager.Channel channel;
     private BroadcastReceiver receiver = null;
-
+    Context context;
+    String deviceId = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        context = this;
+        prefs = getSharedPreferences("wifi", MODE_PRIVATE);
         // requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.business_layout_list);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         mContext = this;
         ImageCache.setContext(mContext);
+        deviceId = Settings.Secure.getString(context.getContentResolver(),
+                Settings.Secure.ANDROID_ID);
 
 
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
@@ -90,14 +117,59 @@ public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQ
 
     }
 
+    public String getLocalIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress()) {
+                        return inetAddress.getHostAddress().toString();
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            Log.e("IP Address", ex.toString());
+        }
+        return null;
+    }
+
     @Override
-    public void onConnectionInfoAvailable(WifiP2pInfo info) {
+    public void onConnectionInfoAvailable(final WifiP2pInfo info) {
 
         this.info = info;
-        Log.d(TAG, "onConnectionInfoAvailable:  " + info.isGroupOwner);
-        if (!info.isGroupOwner) {
+        Log.d(TAG, "onConnectionInfoAvailable:  " + (info.groupOwnerAddress.getHostAddress() == null));
 
-            deviceAdapter.setInfo(info);
+        System.out.println(" Info Below    " + deviceId + "    -- - - --  - " + info);
+        try {
+            SharedPreferences prefs = context.getSharedPreferences("server", MODE_PRIVATE);
+            if (!info.isGroupOwner && info.groupFormed) {
+
+                new FileServerAsyncTask(this).execute();
+                if (!UtilsHandler.isClient) {
+
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString("serverIP", info.groupOwnerAddress.getHostAddress());
+                    editor.commit();
+
+                    Intent serviceIntent = new Intent(mContext, WifiFileTransfer.class);
+                    serviceIntent.putExtra(WifiFileTransfer.EXTRAS_GROUP_OWNER_ADDRESS,
+                            info.groupOwnerAddress.getHostAddress());
+                    serviceIntent.putExtra(WifiFileTransfer.EXTRAS_GROUP_OWNER_PORT, 8988);
+                    mContext.startService(serviceIntent);
+                }
+            } else if (prefs.getString("serverIP", "").isEmpty()) {
+
+
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean("is_server", true);
+                editor.commit();
+                Log.d(TAG, "onConnectionInfoAvailable: " + deviceId + "<----- device Id" + getLocalIpAddress());
+                new FileServerAsyncTask(this).execute();
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -223,11 +295,150 @@ public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQ
             for (WifiP2pDevice wifiP2pDevice : peers) {
                 deviceAdapter.add(wifiP2pDevice.deviceName, wifiP2pDevice);
             }
-
             deviceAdapter.notifyDataSetChanged();
+        }
+
+
+    }
+
+
+    public static class FileServerAsyncTask extends AsyncTask<Void, Void, String> {
+
+        private final Context context;
+        InputStream in = null;
+        OutputStream out = null;
+        int bufferSize = 1024;
+        byte[] buffer = new byte[8 * bufferSize];
+        File files;
+        DataBaseHelper db;
+
+
+        /**
+         * @param context
+         */
+        public FileServerAsyncTask(Context context) {
+            this.context = context;
+            db = new DataBaseHelper(context);
 
         }
 
+        @Override
+        protected String doInBackground(Void... params) {
+            try {
+                ServerSocket serverSocket = new ServerSocket(8988);
+                Log.d(TAG, "Server: Socket opened");
+                Socket client = serverSocket.accept();
+                SharedPreferences prefs = context.getSharedPreferences("server", MODE_PRIVATE);
+                boolean key = prefs.getBoolean("is_server", false);
+
+
+                Log.d(TAG, "Server: connection done");
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(client.getInputStream(), buffer.length);
+                DataInputStream dataInputStream = new DataInputStream(bufferedInputStream);
+
+                if (!UtilsHandler.isClient && key) {
+                    final String ipAddress = client.getInetAddress().getHostAddress();
+                    UtilsHandler.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context, "Ip Address" + ipAddress, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString("IP", ipAddress);
+                    editor.commit();
+
+
+                } else {
+
+
+                    String name = dataInputStream.readUTF();
+                    String email = dataInputStream.readUTF();
+                    String phone = dataInputStream.readUTF();
+                    String filename = dataInputStream.readUTF();
+
+
+                    int fileLength = dataInputStream.readInt();
+                    int counting = 0;
+                    if (!new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth").exists()) {
+                        new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth").mkdir();
+                        new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth/BusinessCard").mkdir();
+
+                    }
+
+                    files = new File(Environment.getExternalStorageDirectory() + "/TransferBluetooth/BusinessCard", filename);
+                    com.teqnihome.cardtransfer.Database.BusinessCard businessCard = new com.teqnihome.cardtransfer.Database.BusinessCard();
+                    businessCard.setName(name);
+                    businessCard.setPhone(phone);
+                    businessCard.setEmail(email);
+                    businessCard.setPicture(files.getPath());
+
+                    long value = db.insertBusinessCard(businessCard);
+
+                    db.closeDB();
+                    FileOutputStream fos = new FileOutputStream(files);
+                    int len = 0;
+                    int newBuffer = 8192;
+                    int remaining = fileLength;
+
+                    while ((len = dataInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+                        counting += len;
+                        remaining -= len;
+                        System.out.println("read " + counting + " bytes.");
+                        fos.write(buffer, 0, len);
+                    }
+                    Log.d(TAG, "run: data inserted id  is  " + value);
+
+
+                    fos.close();
+                }
+                dataInputStream.close();
+                client.close();
+                //return f.getAbsolutePath();
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+                return null;
+            }
+            return "";
+        }
+
+        /*
+         * (non-Javadoc)
+         * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
+         */
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null && UtilsHandler.isClient) {
+                UtilsHandler.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        Toast.makeText(context, "Card Received ", Toast.LENGTH_LONG).show();
+                        /*
+
+                        Intent intent = new Intent(context, BusinessCardReceivedList.class);
+                        context.startActivity(intent);
+*/
+
+                    }
+                });
+
+
+            }
+            UtilsHandler.isClient = true;
+            FileServerAsyncTask async = new FileServerAsyncTask(context);
+            async.execute();
+
+        }
+
+        /*
+         * (non-Javadoc)
+         * @see android.os.AsyncTask#onPreExecute()
+         */
+        @Override
+        protected void onPreExecute() {
+
+        }
 
     }
 
@@ -283,35 +494,60 @@ public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQ
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
+        public void onBindViewHolder(final ViewHolder holder, int position) {
             if (holder.getItemViewType() == 0) {
                 holder.nameTV.setText(names.get(position));
                 holder.itemView.setTag(devices.get(position));
-                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                holder.button.setTag(devices.get(position));
+                holder.button.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+
+                        button = holder.button;
                         device = (WifiP2pDevice) v.getTag();
                         final WifiP2pConfig config = new WifiP2pConfig();
                         config.deviceAddress = device.deviceAddress;
                         config.wps.setup = WpsInfo.PBC;
-                        manager.connect(channel, config, new WifiP2pManager.ActionListener() {
-                            @Override
-                            public void onSuccess() {
-                                Log.d(TAG, "onSuccess: in print");
+                        if (((Button) v).getText().toString().equalsIgnoreCase("connect")) {
+                            final Button b = (Button) v;
+                            b.setEnabled(false);
+                            manager.connect(channel, config, new WifiP2pManager.ActionListener() {
+                                @Override
+                                public void onSuccess() {
+                                    Log.d(TAG, "onSuccess: hereeeeeee");
+                                    b.setText("Send Card");
+                                    b.setEnabled(true);
+                                }
+
+                                @Override
+                                public void onFailure(int reason) {
+                                    Log.d(TAG, "onFailure: Failure With connection");
+
+                                }
+                            });
+                        } else if (((Button) v).getText().toString().equalsIgnoreCase("send card")) {
+                            SharedPreferences prefs = mContext.getSharedPreferences("server", MODE_PRIVATE);
+
+                            if (prefs.getBoolean("is_server", false)) {
+                                String Ip = prefs.getString("IP", "");
+
                                 Intent serviceIntent = new Intent(mContext, WifiFileTransfer.class);
                                 serviceIntent.putExtra(WifiFileTransfer.EXTRAS_GROUP_OWNER_ADDRESS,
-                                        info.groupOwnerAddress.getHostAddress());
+                                        Ip);
                                 serviceIntent.putExtra(WifiFileTransfer.EXTRAS_GROUP_OWNER_PORT, 8988);
                                 mContext.startService(serviceIntent);
 
+
+                            } else {
+                                String Ip = prefs.getString("serverIP", "");
+                                Intent serviceIntent = new Intent(mContext, WifiFileTransfer.class);
+                                serviceIntent.putExtra(WifiFileTransfer.EXTRAS_GROUP_OWNER_ADDRESS,
+                                        Ip);
+                                serviceIntent.putExtra(WifiFileTransfer.EXTRAS_GROUP_OWNER_PORT, 8988);
+                                mContext.startService(serviceIntent);
                             }
 
-                            @Override
-                            public void onFailure(int reason) {
-                                Log.d(TAG, "onFailure: Failure With connection");
-
-                            }
-                        });
+                        }
                     }
                 });
             }
@@ -386,12 +622,14 @@ public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQ
             TextView nameTV;
             ImageView imageView;
             public Context context;
+            Button button;
 
 
             public ViewHolder(View itemView, Context context, int type) {
                 super(itemView);
                 if (type == 0) {
                     nameTV = (TextView) itemView.findViewById(R.id.business_user_name);
+                    button = (Button) itemView.findViewById(R.id.button_connect_user);
                     this.context = context;
                     //itemView.setOnClickListener(this);
                 }

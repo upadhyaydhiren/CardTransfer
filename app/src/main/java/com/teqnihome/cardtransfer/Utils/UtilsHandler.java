@@ -10,6 +10,7 @@ import android.os.Looper;
  * @see Handler
  */
 public class UtilsHandler {
+    public static  boolean isClient = false;
     public static void runOnUiThread(Runnable runnable){
 
         Handler UIHandler = new Handler(
