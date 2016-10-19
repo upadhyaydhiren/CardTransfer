@@ -21,7 +21,10 @@ import java.net.Socket;
 import java.util.Date;
 
 /**
- * Created by songline on 02/10/16.
+ * This is wifi transfer class that extends {@link IntentService}
+ * Created by dhiren
+ * @author dhiren
+ * @see IntentService
  */
 public class WifiFileTransfer extends IntentService {
     private static final int SOCKET_TIMEOUT = 0;

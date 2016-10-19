@@ -59,7 +59,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by songline on 01/10/16.
+ * This is BusinessCardActivity class that extends {@link AppCompatActivity} and implements {@link SearchView} , {@link android.net.wifi.p2p.WifiP2pManager.ChannelListener}
+ * Created by dhiren
+ * @author dhiren
+ * @see AppCompatActivity
+ * @see View
  */
 public class WifiP2PTransfer extends AppCompatActivity implements SearchView.OnQueryTextListener, WifiP2pManager.ConnectionInfoListener, WifiP2pManager.ChannelListener, WifiP2pManager.PeerListListener {
     private static final String TAG = "MainActivity";
